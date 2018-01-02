@@ -28,14 +28,16 @@
             <video id="video" width="640" height="480" autoplay></video>
         </div>
         <div class="container">
-            <button class="btn btn-primary btn-lg mb-1  " id="snap">Snap Photo</button>
+            <button class="btn btn-primary btn-lg mb-1" disabled="true" id="snap">Snap Photo</button>
+            <button class="btn btn-primary btn-lg mb-1" id="showCam">Show Camera</button>
         </div>
-        <div class="container">
+        <div class="container" style="display:none">
+        <!--<div class="container">-->
             <canvas id="canvas" width="640" height="480"></canvas>
         </div>
     </main>
     <script src="js/aws_access_vars.js"></script>
-    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.176.0.min.js"></script>
+    <!--<script src="https://sdk.amazonaws.com/js/aws-sdk-2.176.0.min.js"></script>-->
     <script>    
 
 
@@ -43,25 +45,49 @@
         // Grab elements, create settings, etc.
         var video = document.getElementById('video');
 
-        // Get access to the camera!
-        if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-            // Not adding `{ audio: true }` since we only want video now
-            navigator.mediaDevices.getUserMedia({ video: true }).then(function(stream) {
-                video.src = window.URL.createObjectURL(stream);
-                video.play();
-            });
-        }
         // Elements for taking the snapshot
         var canvas = document.getElementById('canvas');
         var context = canvas.getContext('2d');
         var video = document.getElementById('video');
 
+        var snapButton = document.getElementById("snap");
+        var showVideoButton = document.getElementById("showCam");
+
+        var snapCanvas = document.createElement("canvas");
+
+        w = 640;
+        h = 480;
+        snapCanvas.width = w;
+        snapCanvas.height = h;
+        snapCanvas.id="canvas";
+        
+        function startCam() {
+            // Get access to the camera!
+            if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                // Not adding `{ audio: true }` since we only want video now
+                navigator.mediaDevices.getUserMedia({ video: true }).then(function(stream) {
+                    video.src = window.URL.createObjectURL(stream);
+                    video.play();
+                });
+            }
+            snapButton.disabled = false;
+            showVideoButton.disabled = true;
+        }
+
+        startCam();
+
+        showVideoButton.addEventListener("click", function() {
+            snapCanvas.parentNode.replaceChild(video, snapCanvas);
+            startCam();
+            video.play();
+        });
         // Trigger photo take
-        document.getElementById("snap").addEventListener("click", function() {
-            context.drawImage(video, 0, 0, 640, 480);
+        snapButton.addEventListener("click", function() {
+            context.drawImage(video, 0, 0, w, h);
             var dataURL = canvas.toDataURL();
             var now = new Date();
-                    // AWS Config
+            /*
+            // AWS Config
             AWS.config.update({
                 region: bucketRegion,
                 credentials: new AWS.CognitoIdentityCredentials({
@@ -82,23 +108,45 @@
                 return alert('There was an error uploading your photo: ', err.message);
                 }
                 alert('Successfully uploaded photo.');
-            });
-            /*
+            });*/
+            
             //Alternative ajax upload
+            video.pause();
+            video.parentNode.replaceChild(snapCanvas, video);
+
+            snapButton.disabled = true;
+            showVideoButton.disabled = false;
+            snapCtxt = snapCanvas.getContext('2d');
+            snapCtxt.drawImage(canvas, 0, 0, w, h);
+            
             $.ajax({
                 type: "POST",
-                url: "script.php",
-                data: { 
-                    imgBase64: dataURL
-                }
-                }).done(function(o) {
-                console.log('saved'); 
+                url: lambdaUrl,
+                contentType: "application/json",
+                data: JSON.stringify({ picture: dataURL }),
+                success: function(data) {
+                    console.log(data);
+                    data["FaceDetails"].forEach(function(face) {
+                        box = face["BoundingBox"];
+                        snapCtxt.beginPath();
+                        snapCtxt.strokeStyle="rgb(50,50,250)"
+                        snapCtxt.lineWidth = 10;
+                        snapCtxt.moveTo(box["Left"]*w, box["Top"]*h);
+                        snapCtxt.lineTo((box["Left"]+box["Width"])*w, box["Top"]*h);
+                        snapCtxt.lineTo((box["Left"]+box["Width"])*w, (box["Top"]+box["Height"])*h);
+                        snapCtxt.lineTo(box["Left"]*w, (box["Top"]+box["Height"])*h);
+                        snapCtxt.closePath();
+                        snapCtxt.stroke();
+
+                    });
+            }
+            }).done(function(data, textStatus, jqXHR ) {
+                console.log("Daten gesendet"); 
                 // If you want the file to be visible in the browser 
                 // - please modify the callback in javascript. All you
                 // need is to return the url to the file, you just saved 
                 // and than put the image in your browser.
-                });
-            */
+            });
         });
     </script>
     <script src="js/jquery-3.2.1.min.js"></script>
