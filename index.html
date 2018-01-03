@@ -7,7 +7,7 @@
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <title>AWS Recognition Demo</title>
+    <title>DAAN Roadshow Gesichtserkennungs-Demo</title>
 
     <!-- Bootstrap core CSS -->
     <link href="css/bootstrap.min.css" rel="stylesheet">
@@ -18,18 +18,18 @@
 
 <body>
     <nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
-        <a class="navbar-brand" href="#">Demo</a>
+        <a class="navbar-brand" href="#">DAAN Roadshow</a>
     </nav>
     <main role="main" class="container">
         <div class="container">
-            <h1>AWS Recognition Demo</h1>
+            <h1>Gesichtserkennungs-Demo</h1>
         </div>
         <div class="container">
             <video id="video" width="640" height="480" autoplay></video>
         </div>
         <div class="container">
-            <button class="btn btn-primary btn-lg mb-1" disabled="true" id="snap">Snap Photo</button>
-            <button class="btn btn-primary btn-lg mb-1" id="showCam">Show Camera</button>
+            <button class="btn btn-primary btn-lg mb-1" disabled="true" id="snap">Gesichter erkennen</button>
+            <button class="btn btn-primary btn-lg mb-1" id="showCam">Kamerabild zeigen</button>
         </div>
         <div class="container" style="display:none">
         <!--<div class="container">-->
@@ -129,14 +129,17 @@
                     data["FaceDetails"].forEach(function(face) {
                         box = face["BoundingBox"];
                         snapCtxt.font = 'bold 18px sans-serif';
-                        text = face["Gender"]["Value"] + ", aged " + face["AgeRange"]["Low"] + "-" + face["AgeRange"]["High"] +
-                            ", ";
-                        if (face["Emotions"].length>0) {text += face["Emotions"][0]["Type"];}
+                        text = face["Gender"]["Value"].replace("Male", "Mann").replace("Female", "Frau") + ", " + face["AgeRange"]["Low"] + "-" + face["AgeRange"]["High"] +
+                            "J, ";
+                        if (face["Emotions"].length>0) {text += face["Emotions"][0]["Type"].replace("HAPPY", "fröhlich")
+                            .replace("SAD", "traurig").replace("ANGRY", "wütend").replace("CONFUSED", "verwirrt")
+                            .replace("DISGUSTED","angewidert").replace("SURPRISED", "überrascht").replace("CALM", "ruhig")
+                            .replace("UNKNOWN", "unbekannt");}
                         snapCtxt.fillStyle="rgb(50,50,250)";
                         snapCtxt.fillText(text, box["Left"]*w, box["Top"]*h-11);
                         snapCtxt.beginPath();
                         snapCtxt.strokeStyle="rgb(50,50,250)";
-                        snapCtxt.lineWidth = 10;
+                        snapCtxt.lineWidth = 5;
                         snapCtxt.moveTo(box["Left"]*w, box["Top"]*h);
                         snapCtxt.lineTo((box["Left"]+box["Width"])*w, box["Top"]*h);
                         snapCtxt.lineTo((box["Left"]+box["Width"])*w, (box["Top"]+box["Height"])*h);
