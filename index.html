@@ -128,8 +128,14 @@
                     console.log(data);
                     data["FaceDetails"].forEach(function(face) {
                         box = face["BoundingBox"];
+                        snapCtxt.font = 'bold 18px sans-serif';
+                        text = face["Gender"]["Value"] + ", aged " + face["AgeRange"]["Low"] + "-" + face["AgeRange"]["High"] +
+                            ", ";
+                        if (face["Emotions"].length>0) {text += face["Emotions"][0]["Type"];}
+                        snapCtxt.fillStyle="rgb(50,50,250)";
+                        snapCtxt.fillText(text, box["Left"]*w, box["Top"]*h-11);
                         snapCtxt.beginPath();
-                        snapCtxt.strokeStyle="rgb(50,50,250)"
+                        snapCtxt.strokeStyle="rgb(50,50,250)";
                         snapCtxt.lineWidth = 10;
                         snapCtxt.moveTo(box["Left"]*w, box["Top"]*h);
                         snapCtxt.lineTo((box["Left"]+box["Width"])*w, box["Top"]*h);
