@@ -30,6 +30,13 @@
         <div class="container">
             <button class="btn btn-primary btn-lg mb-1" disabled="true" id="snap">Gesichter erkennen</button>
             <button class="btn btn-primary btn-lg mb-1" id="showCam">Kamerabild zeigen</button>
+        <div class="form-group ml-5">
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" value="" id="hungerCheck">
+                <label class="form-check-label" for="hungerCheck">
+                Hunger bewerten
+                </label>
+            </div>
         </div>
         <div class="container" style="display:none">
         <!--<div class="container">-->
@@ -54,9 +61,11 @@
         var showVideoButton = document.getElementById("showCam");
 
         var snapCanvas = document.createElement("canvas");
+        var hungerCheck = document.getElementById("hungerCheck")
 
         w = 640;
         h = 480;
+        genderCol = {Male: "rgb(100,200,250)", Female: "rgb(250,200,200)"};
         snapCanvas.width = w;
         snapCanvas.height = h;
         snapCanvas.id="canvas";
@@ -129,16 +138,26 @@
                     data["FaceDetails"].forEach(function(face) {
                         box = face["BoundingBox"];
                         snapCtxt.font = 'bold 18px sans-serif';
-                        text = face["Gender"]["Value"].replace("Male", "Mann").replace("Female", "Frau") + ", " + face["AgeRange"]["Low"] + "-" + face["AgeRange"]["High"] +
+                        text = face["AgeRange"]["Low"] + "-" + face["AgeRange"]["High"] +
                             "J, ";
-                        if (face["Emotions"].length>0) {text += face["Emotions"][0]["Type"].replace("HAPPY", "fröhlich")
-                            .replace("SAD", "traurig").replace("ANGRY", "wütend").replace("CONFUSED", "verwirrt")
-                            .replace("DISGUSTED","angewidert").replace("SURPRISED", "überrascht").replace("CALM", "ruhig")
-                            .replace("UNKNOWN", "unbekannt");}
-                        snapCtxt.fillStyle="rgb(50,50,250)";
+                        if (face["Emotions"].length>0) {
+                            if (hungerCheck.checked==false) {
+                                text += face["Emotions"][0]["Type"].replace("HAPPY", "fröhlich")
+                                    .replace("SAD", "traurig").replace("ANGRY", "wütend").replace("CONFUSED", "verwirrt")
+                                    .replace("DISGUSTED","angewidert").replace("SURPRISED", "überrascht").replace("CALM", "ruhig")
+                                    .replace("UNKNOWN", "unbekannt");
+                                }
+                            else {
+                                text += face["Emotions"][0]["Type"].replace("HAPPY", "satt")
+                                    .replace("SAD", "hungrig").replace("ANGRY", "verhungert").replace("CONFUSED", "sehr hungrig")
+                                    .replace("DISGUSTED","angewidert").replace("SURPRISED", "hungrig").replace("CALM", "satt")
+                                    .replace("UNKNOWN", "unbekannt");
+                            }
+                        }
+                        snapCtxt.fillStyle=genderCol[face["Gender"]["Value"]];
                         snapCtxt.fillText(text, box["Left"]*w, box["Top"]*h-11);
                         snapCtxt.beginPath();
-                        snapCtxt.strokeStyle="rgb(50,50,250)";
+                        snapCtxt.strokeStyle=genderCol[face["Gender"]["Value"]];
                         snapCtxt.lineWidth = 5;
                         snapCtxt.moveTo(box["Left"]*w, box["Top"]*h);
                         snapCtxt.lineTo((box["Left"]+box["Width"])*w, box["Top"]*h);
