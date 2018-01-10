@@ -1,7 +1,10 @@
 import base64
 import boto3
 from PIL import Image
-import StringIO
+from io import BytesIO
+from aws_secrets import BUCKET_NAME
+import datetime
+import json
 
 def decode_base64(data):
     """Decode base64, padding being optional.
@@ -22,7 +25,9 @@ def lambda_handler(event, context):
     filename = datetime.datetime.now().isoformat() + ".png"
     object = s3.Object(BUCKET_NAME, filename)
     object.put(Body=data)
-    im = Image.open(StringIO.StringIO(data))    
+    #object = s3.Object(BUCKET_NAME, "event_data_test")
+    #object.put(Body=json.dumps(event))
+    im = Image.open(BytesIO(data))    
 
     # run face recognition on data set
     rekognition = boto3.client('rekognition','eu-west-1')
@@ -34,11 +39,11 @@ def lambda_handler(event, context):
         w,h = im.size
         faceImage = im.crop((box["Left"]*w, box["Top"]*h, (box["Left"]+box["Width"])*w, (box["Top"]+box["Height"])*h))
         # Writing image to string buffer for output to S3
-        outBuffer = StringIO.StringIO()
+        outBuffer = BytesIO()
         faceImage.save(outBuffer, "PNG")
-        #object = s3.Object(BUCKET_NAME, filename)
-        #object.put(Body=outBuffer)
-        outdata = "image/png;base64," + base64.encode(outBuffer)
+        object = s3.Object(BUCKET_NAME, "faceid_"+str(idx)+"_"+filename)
+        object.put(Body=outBuffer.getvalue())
+        outdata = "image/png;base64," + base64.b64encode(outBuffer.getvalue()).decode()
         response["FaceDetails"][idx]["faceImage"] = outdata
         
     return response
